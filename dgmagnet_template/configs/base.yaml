@@ -5,7 +5,7 @@ experiment:
   name: dg_magnet_base
   seed: 2025
   deterministic: true
-  device: cpu
+  device: cuda
 
 data:
   dataset: SEED                # SEED | SEED-IV | DEAP
@@ -21,7 +21,7 @@ data:
 
 model:
   name: DGMAGNet
-  d_g: 64                      # graph embedding dim (also token dim for temporal)
+  d_g: 128                     # graph embedding dim (also token dim for temporal)
   # Spatial (Multi-branch ChebyNet)
   K_cheb: 4
   L1: 2                        # depth of learnable branch 1
@@ -34,7 +34,7 @@ model:
   d_state: 16
   mamba_expand: 2
   attention_heads: 8
-  attention_head_dim: 8        # d_g = heads * head_dim
+  attention_head_dim: 16       # d_g = heads * head_dim: 8*16=128
   sta_kernel: 3                # Short-Time Aggregation Conv1D kernel
   ffn_ratio: 1.0
   dropout: 0.3
@@ -69,7 +69,7 @@ training:
   scheduler: cosine            # cosine | step | none
   early_stop_patience: 20
   grad_clip: 1.0
-  mixed_precision: false
+  mixed_precision: true
 
 ttga:
   enabled: true

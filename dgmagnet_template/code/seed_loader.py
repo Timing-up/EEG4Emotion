@@ -75,7 +75,10 @@ def _collect_subject_data(mat_paths: list[str], seq_len: int):
     subj_files: dict[int, list[str]] = defaultdict(list)
     for p in mat_paths:
         fname = os.path.basename(p)
-        subj_id = int(fname.split("_")[0]) - 1  # 0-indexed
+        part = fname.split("_")[0]
+        if not part.isdigit():
+            continue  # skip label.mat and other non-subject files
+        subj_id = int(part) - 1  # 0-indexed
         subj_files[subj_id].append(p)
 
     subj_data = {}
@@ -121,11 +124,13 @@ def build_loaders_seed(cfg: dict, fold_id: int):
 
     test_idx = fold_id % num_subjects
     train_indices = [i for i in range(num_subjects) if i != test_idx]
-    num_train_subjects = len(train_indices)
 
-    n_val_subs = max(1, int(round(num_train_subjects * val_frac)))
+    # Val split BEFORE recording num_train_subjects so model is built
+    # with exactly the number of subjects that appear in training batches.
+    n_val_subs = max(1, int(round(len(train_indices) * val_frac)))
     val_indices = train_indices[-n_val_subs:]
     train_indices = train_indices[:-n_val_subs]
+    num_train_subjects = len(train_indices)  # 13 for SEED (14-1 val)
 
     def collect(indices, assign_subject=True):
         all_x, all_y, all_sid = [], [], []
