@@ -1,0 +1,20 @@
+_base_: base.yaml
+
+experiment:
+  name: dg_magnet_seed_iv_loso
+
+data:
+  dataset: SEED-IV
+  root: ~/dgmagnet/data/SEED-IV
+  num_channels: 62
+  num_bands: 5
+
+model:
+  num_classes: 4               # happy, sad, fear, neutral
+  d_g: 64
+
+evaluation:
+  protocol: LOSO
+  n_folds: 15
+
+# Target: Vanilla ~72%, Full DG-MAGNet ~75%+

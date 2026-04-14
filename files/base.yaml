@@ -1,0 +1,99 @@
+# DG-MAGNet base configuration
+# Override per-dataset in seed_loso.yaml / seed_iv_loso.yaml / deap_loso.yaml
+
+experiment:
+  name: dg_magnet_base
+  seed: 2025
+  deterministic: true
+  device: cuda
+
+data:
+  dataset: SEED                # SEED | SEED-IV | DEAP
+  root: ~/dgmagnet/data/SEED
+  feature: DE                  # DE | rPSD | raw
+  num_bands: 5                 # δ θ α β γ
+  num_channels: 62             # DEAP: 32
+  window_seconds: 1
+  overlap: 0.0
+  bandpass: [0.3, 50.0]
+  normalize: subject_zscore    # computed from TRAIN subjects only
+  sequence_length: 9           # number of 1s windows per sample for temporal model
+
+model:
+  name: DGMAGNet
+  d_g: 64                      # graph embedding dim (also token dim for temporal)
+  # Spatial (Multi-branch ChebyNet)
+  K_cheb: 4
+  L1: 2                        # depth of learnable branch 1
+  L2: 2                        # depth of learnable branch 2
+  delta_local: 0.1             # normalized 3D distance threshold for fixed adj
+  fusion_type: softmax_gated   # softmax_gated | concat
+  graph2token: linear          # linear | flatten
+  # Temporal (Mamba + Attention hybrid)
+  mamba_depth: 4               # number of Mamba+FFN blocks
+  d_state: 16
+  mamba_expand: 2
+  attention_heads: 8
+  attention_head_dim: 8        # d_g = heads * head_dim
+  sta_kernel: 3                # Short-Time Aggregation Conv1D kernel
+  ffn_ratio: 1.0
+  dropout: 0.3
+  num_classes: 3               # SEED:3, SEED-IV:4, DEAP:2
+
+isgd:
+  enabled: true
+  low_rank_r: 8                # rank of A_spec
+  subject_embed_dim: 32
+  lambda_spec: 1.0             # weight on A_spec contribution
+
+losses:
+  ce_weight: 1.0
+  use_adv: true
+  alpha_adv: 0.1
+  adv_grl_lambda: 1.0          # gradient reversal strength
+  use_mi: true
+  alpha_mi: 0.01
+  mi_estimator: CLUBSample
+  use_reg: true
+  alpha_reg: 0.001             # Frobenius on A_spec
+  label_smoothing: 0.1
+
+training:
+  optimizer: AdamW
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  betas: [0.9, 0.999]
+  batch_size: 64
+  epochs: 100
+  warmup_epochs: 5
+  scheduler: cosine            # cosine | step | none
+  early_stop_patience: 20
+  grad_clip: 1.0
+  mixed_precision: true
+
+ttga:
+  enabled: true
+  adapt_samples: 5             # number of unlabeled target samples
+  adapt_steps: 5
+  adapt_lr: 1.0e-3
+  entropy_weight: 1.0
+  frobenius_weight: 0.1
+  init_from: mean_train_embedding  # mean_train_embedding | random | nearest_neighbor
+
+evaluation:
+  protocol: LOSO               # LOSO | k_fold
+  n_folds: 15                  # SEED/SEED-IV:15, DEAP:32
+  val_split_from_train: 0.1    # held-out subjects for early stopping
+  metrics: [accuracy, macro_f1, weighted_f1]
+  report_std: true
+  n_seeds: 3
+  seeds: [2024, 2025, 2026]
+
+logging:
+  use_wandb: true
+  wandb_project: dg-magnet
+  wandb_entity: null           # FILL IN YOUR ENTITY
+  log_every: 20                # steps
+  save_checkpoints: true
+  checkpoint_dir: ~/dgmagnet/outputs/checkpoints
+  figures_dir: ~/dgmagnet/outputs/figures

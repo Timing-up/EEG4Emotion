@@ -1,0 +1,68 @@
+# Ablation study configs — all based on SEED LOSO
+# Usage: python train.py --config configs/ablation.yaml --variant vanilla
+
+_base_: seed_loso.yaml
+
+variants:
+
+  vanilla:
+    # Baseline MAGNet: no DG, no TTGA
+    isgd:
+      enabled: false
+    losses:
+      use_adv: false
+      use_mi: false
+      use_reg: false
+    ttga:
+      enabled: false
+
+  isgd_only:
+    # + Invariant-Specific Graph Decomposition
+    isgd:
+      enabled: true
+    losses:
+      use_adv: false
+      use_mi: false
+      use_reg: true
+    ttga:
+      enabled: false
+
+  isgd_adv:
+    # + Adversarial subject discriminator
+    isgd:
+      enabled: true
+    losses:
+      use_adv: true
+      use_mi: false
+      use_reg: true
+    ttga:
+      enabled: false
+
+  isgd_adv_mi:
+    # + CLUB MI minimization
+    isgd:
+      enabled: true
+    losses:
+      use_adv: true
+      use_mi: true
+      use_reg: true
+    ttga:
+      enabled: false
+
+  full:
+    # Full DG-MAGNet (= base config defaults)
+    isgd:
+      enabled: true
+    losses:
+      use_adv: true
+      use_mi: true
+      use_reg: true
+    ttga:
+      enabled: true
+
+# Expected SEED LOSO progression:
+#   vanilla      -> ~80%
+#   isgd_only    -> ~82%
+#   isgd_adv     -> ~84%
+#   isgd_adv_mi  -> ~85%
+#   full         -> ~89%+

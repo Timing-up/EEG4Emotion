@@ -1,0 +1,28 @@
+_base_: base.yaml
+
+experiment:
+  name: dg_magnet_deap_loso
+
+data:
+  dataset: DEAP
+  root: ~/dgmagnet/data/DEAP
+  num_channels: 32             # DEAP uses 32 electrodes
+  num_bands: 5
+  # DEAP is 2D (valence + arousal), run as two binary tasks
+  task: valence                # valence | arousal
+
+model:
+  num_classes: 2
+  d_g: 64
+
+training:
+  batch_size: 128              # DEAP has more samples, can go larger
+
+evaluation:
+  protocol: LOSO
+  n_folds: 32
+
+isgd:
+  low_rank_r: 6                # smaller rank for 32-channel setting
+
+# Target: Vanilla ~65%, Full DG-MAGNet ~70%+

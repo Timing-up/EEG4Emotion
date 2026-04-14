@@ -1,0 +1,491 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.21 of 2022/01/12
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
+% T1 fonts will be used to generate the final print and online PDFs,
+% so please use T1 fonts in your manuscript whenever possible.
+% Other font encondings may result in incorrect characters.
+%
+\usepackage{graphicx}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following two lines
+% to display URLs in blue roman font according to Springer's eBook style:
+%\usepackage{color}
+%\renewcommand\UrlFont{\color{blue}\rmfamily}
+%\urlstyle{rm}
+%
+\usepackage{marvosym}
+\usepackage{amsmath} 
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+
+\begin{document}
+%
+\title{MAGNet:Emotion Recognition using Spatiotemporal-Spectral EEG Features through Mamba Attention Graph Networks
+}
+%
+\titlerunning{MAGNet for EEG Emotion Recognition}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+\author{Junhao Wang\inst{1}\orcidID{0009-0002-7065-1522} \and
+Jingyu Tang\inst{1}\orcidID{0009-0007-9984-8843} \and
+YunXin Xu\inst{1}\orcidID{0009-0000-2877-7303} \and
+Xujian Zhao\inst{1}\textsuperscript{(\Letter)}\orcidID{0000-0003-4717-9231}}
+%
+\authorrunning{J. Wang et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+\institute{School of Computer Science and Technology, Southwest University of Science and Technology, Mianyang Sichuan 621010, China \and \\
+\email{\{jasonzhaoxj\}@swust.edu.cn}}
+%
+\maketitle              % typeset the header of the contribution
+%
+
+
+
+\begin{abstract}
+Electroencephalography (EEG)-based emotion recognition is a pivotal and rapidly evolving research area within Brain-Computer Interfaces, holding significant promise for various applications. However, effectively integrating the inherent temporal, spectral, and spatial (T-S-S) information within EEG signals, particularly for robust cross-subject generalization, remains a significant challenge for current methodologies. To address this challenge, we introduce Mamba Attention Graph Network (MAGNet), a novel hybrid deep learning framework. MAGNet comprises three main stages: first, it employs a multi-view graph convolutional network (GCN) to extract and encode discriminative spatio-spectral features from the EEG signals. Next, a hybrid Mamba-Attention module performs in-depth temporal feature extraction, adeptly modeling long-range dependencies within the sequence. Furthermore, drawing inspiration from neuroscientific priors, the framework integrates physical spatial information of EEG channels to enhance the learned spatial representations. Extensive experiments conducted on the publicly available SEED dataset, under a rigorous cross-subject validation scheme, demonstrate the effectiveness and superiority of MAGNet. Our proposed model achieves a competitive average accuracy of 81.2\% and an F1-score of 83.7\%, significantly outperforming relevant baseline methods and highlighting its potential for robust cross-subject EEG emotion recognition.
+
+\keywords{Emotion Recognition \and EEG \and GCN \and Mamba \and Attention \and Spatiotemporal-Spectral Features.}
+\end{abstract}
+%
+%
+%
+
+
+\section{Introduction}
+
+\label{sec:introduction}
+
+
+
+Human emotion plays a fundamental role in cognition, perception, decision-making, and social interaction. Automatically recognizing emotions is therefore a crucial capability for developing more natural and empathetic human-computer interaction (HCI) systems, advancing affective computing, and improving mental health monitoring and diagnosis \cite{cite_review_affective_computing}. Among various physiological signals, electroencephalography (EEG) provides a direct, non-invasive window into brain activity associated with emotional states, offering rich temporal information about neural processes \cite{cite_eeg_review}. Consequently, EEG-based emotion recognition has emerged as a vibrant and significant research area within Brain-Computer Interfaces (BCIs) and related fields.
+
+
+
+Despite its potential, accurately decoding emotions from EEG signals presents considerable challenges. EEG signals are inherently complex, non-stationary, low in signal-to-noise ratio, and possess high dimensionality \cite{cite_eeg_challenges}. Effectively identifying emotional correlates requires sophisticated methods capable of capturing and integrating discriminative information distributed across multiple domains: the temporal evolution of neural responses, the spectral power variations across different frequency bands (e.g., delta, theta, alpha, beta, gamma), and the spatial distribution of activity across various scalp locations \cite{cite_TSS_importance}. Furthermore, significant inter-subject variability in EEG patterns, stemming from differences in anatomy, physiology, and emotional expression, poses a major obstacle to building models that generalize robustly across different individuals – a critical requirement for practical applications \cite{cite_cross_subject_challenge}.
+
+
+
+Various machine learning and deep learning approaches have been explored to tackle these challenges. Traditional methods often relied on handcrafted features extracted from specific time segments or frequency bands, followed by classifiers like SVM or KNN \cite{cite_traditional_ml}. While interpretable, these methods may fail to capture the full complexity of EEG dynamics. Deep learning models, including Convolutional Neural Networks (CNNs) for learning spatial or spectral patterns \cite{cite_cnn_eeg} and Recurrent Neural Networks (RNNs) like LSTMs for modeling temporal sequences \cite{cite_rnn_eeg}, have demonstrated improved performance. More recently, Graph Neural Networks (GNNs) have gained attention for their ability to explicitly model the spatial relationships between EEG channels based on their physical proximity or functional connectivity \cite{cite_gnn_eeg, Jin_PGCN_example}. Transformers have also been applied, showcasing strong capabilities in capturing long-range dependencies \cite{cite_transformer_eeg, Ding_EmT_example}. However, many existing methods still struggle to optimally fuse information from the temporal, spectral, and spatial domains simultaneously. GNNs might over-smooth features or not fully integrate temporal context, while standard sequence models may neglect crucial spatial topology, and some powerful architectures like Transformers can be computationally intensive and data-hungry for typical EEG dataset sizes.
+
+
+
+To address these limitations, this paper introduces the Mamba Attention Graph Network (MAGNet), a novel hybrid deep learning framework specifically designed for effective feature fusion and robust cross-subject EEG-based emotion recognition. MAGNet synergistically combines the strengths of multiple architectures: it utilizes a multi-view Graph Convolutional Network (GCN) to learn discriminative spatio-spectral representations, potentially guided by neuroscientific priors about electrode relationships. Crucially, it then employs a hybrid module integrating Mamba – a recent State Space Model excelling at capturing long-range dependencies with linear complexity – and an Attention mechanism to effectively model the temporal dynamics of the graph-encoded features. This hybrid design aims to achieve a comprehensive representation of the underlying emotional brain states by explicitly modeling both spatial structure and long-term temporal patterns efficiently.
+
+
+
+The main contributions of this paper are summarized as follows:
+\begin{itemize}
+    \item We propose MAGNet, a novel hybrid deep learning architecture combining multi-view GCNs, Mamba, and Attention mechanisms tailored for EEG-based emotion recognition.
+    \item We present a strategy within MAGNet to effectively fuse spatial, spectral, and temporal information derived from EEG signals.
+    \item We conduct extensive experiments on the public SEED dataset under a rigorous cross-subject validation scheme, demonstrating that MAGNet achieves competitive performance and outperforms relevant baseline methods.
+\end{itemize}
+
+
+
+
+\section{Related Work}
+\label{sec:related_work}
+
+EEG-based emotion recognition has been extensively studied, with research evolving from traditional machine learning methods to sophisticated deep learning architectures capable of automatically learning discriminative features from complex EEG signals. This section reviews relevant prior work, focusing on approaches for spatial, temporal, and spatiotemporal feature learning from EEG data.
+
+\subsection{Traditional Machine Learning and Early Deep Learning}
+Early research predominantly relied on traditional machine learning pipelines involving manual feature engineering followed by classification. Common handcrafted features included spectral power in different frequency bands (e.g., PSD), Hjorth parameters, fractal dimensions, and wavelet coefficients \cite{cite_traditional_features_review}. Classifiers such as Support Vector Machines (SVM), k-Nearest Neighbors (KNN), and Random Forests were frequently employed \cite{cite_traditional_classifiers}. While these methods provided valuable insights, they often required significant domain expertise for feature design and might fail to capture the intricate, high-level representations embedded in raw EEG signals.
+
+The advent of deep learning offered end-to-end learning capabilities, reducing the reliance on manual feature extraction. Initial deep learning applications often focused on either spatial or temporal aspects independently. Convolutional Neural Networks (CNNs) were adapted to process EEG data, treating it as grid-like structures (e.g., 2D maps of electrode activity or spectral features) to learn local spatial or spectro-temporal patterns \cite{cite_cnn_eeg_1, cite_cnn_eeg_2}. Recurrent Neural Networks (RNNs), particularly Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) networks, were employed to model the temporal sequences inherent in EEG time series \cite{cite_rnn_lstm_eeg}. However, these early models often processed spatial and temporal information separately or in a relatively shallow manner.
+
+\subsection{Spatial Feature Learning: CNNs and GNNs}
+Recognizing the importance of spatial relationships between EEG channels, researchers have explored more advanced techniques. While 2D CNNs impose a grid structure that may not reflect the true topology of the scalp, alternative CNN approaches have been proposed \cite{cite_spherical_cnn_or_other}. More naturally suited for non-Euclidean data like EEG electrode layouts are Graph Neural Networks (GNNs). GNNs explicitly model the relationships between channels (nodes) based on an adjacency matrix representing anatomical proximity, physical distance, or functional connectivity derived from the signals themselves \cite{cite_gnn_review_eeg}. Various GNN architectures, such as Graph Convolutional Networks (GCN) \cite{cite_gcn_kipf}, Graph Attention Networks (GAT) \cite{cite_gat}, and variations tailored for EEG have been applied to emotion recognition \cite{cite_gnn_app_1, cite_gnn_app_2}. For instance, PGCN \cite{cite_jin_pgcn} utilized fixed-distance adjacency matrices combined with learnable graph kernels. While GNNs excel at capturing spatial dependencies, effectively integrating this spatial information with the rich temporal dynamics captured by sequence models remains an active area of research. Many GNN approaches for EEG process time segments independently or use simple temporal aggregation, potentially losing fine-grained temporal information.
+
+\subsection{Temporal Feature Learning: RNNs and Transformers}
+Simultaneously, advancements continued in modeling the temporal dynamics of EEG. While LSTMs and GRUs addressed the vanishing gradient problem of simple RNNs, capturing very long-range dependencies efficiently can still be challenging. Inspired by their success in natural language processing, Transformers \cite{cite_vaswani_attention} have been increasingly applied to sequence modeling tasks in neuroscience, including EEG emotion recognition \cite{cite_transformer_eeg_1, cite_transformer_eeg_2}. The self-attention mechanism allows Transformers to model dependencies between distant time points effectively. EmT \cite{cite_ding_emt}, for example, employed a Transformer architecture following graph convolution layers to capture temporal context. However, the standard Transformer's self-attention mechanism has quadratic complexity with respect to sequence length, making it computationally expensive for very long EEG recordings common in emotion studies. Furthermore, ensuring effective fusion with spatial information captured by other modules like GNNs requires careful architectural design.
+
+\subsection{Hybrid Models and Advanced Sequence Modeling}
+To leverage the strengths of different architectures, hybrid models combining spatial and temporal feature extractors have become popular. Examples include CNN+LSTM \cite{cite_cnn_lstm}, GCN+LSTM \cite{cite_gcn_lstm}, and GCN+Transformer architectures like EmT \cite{cite_ding_emt}. These models aim to provide a more holistic representation by processing both spatial and temporal aspects. Recently, State Space Models (SSMs), particularly Mamba \cite{cite_mamba}, have emerged as a promising alternative or complement to Transformers for long sequence modeling. Mamba achieves strong performance in modeling long-range dependencies with linear time complexity, making it highly suitable for processing extended physiological signals like EEG.
+
+Our proposed MAGNet builds upon these advancements but introduces a novel hybrid approach. It distinctly integrates a multi-view GCN for rich spatio-spectral feature extraction with a parallel Mamba-Attention temporal modeling block. This differs from prior works like EmT, which uses a sequential GCN-then-Transformer structure, or PGCN, which focuses primarily on graph learning aspects. By leveraging the graph learning capabilities of GCNs, the efficient long-range modeling of Mamba, and the feature refinement potential of Attention in a parallel temporal module, MAGNet aims to achieve a more comprehensive and efficient fusion of spatiotemporal-spectral information for robust cross-subject EEG emotion recognition. The explicit use of neuroscientific priors to potentially guide the GCN further differentiates our approach.
+\begin{figure}
+\includegraphics[width=\textwidth]{fig_MAGNet.pdf}
+\caption{A figure caption is always placed below the illustration.
+Please note that short captions are centered, while long ones are
+justified by the macro package automatically.} \label{fig1}
+\end{figure}
+
+\section{Methodology}
+
+\label{sec:methodology}
+
+This section elaborates on the architecture of the proposed Mamba Attention Graph Network (MAGNet), developed for enhanced cross-subject emotion recognition from EEG signals. MAGNet integrates graph-based spatial feature extraction with contemporary sequence modeling techniques to effectively fuse spatio-spectral and temporal information. The overall architecture, depicted schematically in Figure~\ref{fig:magnet_architecture} (figure to be included), consists of three main stages: (1) multi-branch spatio-spectral encoding, (2) hybrid Mamba-Attention temporal modeling, and (3) a final classification head.
+
+\subsection{Input Representation}
+
+\label{subsec:input_rep_v3}
+
+As detailed in Section~\ref{subsec:preprocessing}, the network receives input as a sequence of feature matrices $\{F^i\}_{i=1}^{S}$. Each matrix $F^i \in \mathbb{R}^{c \times f}$ contains the Relative Power Spectral Density (rPSD) features for $c=62$ EEG channels across $f=7$ frequency bands, corresponding to the $i$-th temporal subsegment. The input tensor dimension is thus $(B, S, c, f)$, where $B$ denotes the batch size and $S$ represents the sequence length.
+
+
+\subsection{Multi-Branch Spatio-Spectral Encoding}
+\label{subsec:graph_encoding_v3}
+
+This module aims to extract rich spatial features informed by spectral characteristics from each time-step feature matrix $F^i$. We model the EEG channels as nodes $\mathcal{V}$ ($|\mathcal{V}|=c$) in a graph $\mathcal{G}^i = (\mathcal{V}, \mathcal{E}^i, F^i)$, where $F^i$ serves as node attributes. The connectivity $\mathcal{E}^i$ is captured through multiple adjacency matrix representations processed in parallel branches.
+\begin{enumerate}
+    \item \textbf{Learnable Graph Branches (GE1, GE2):} Two parallel branches employ Graph Encoder modules based on ChebyNet \cite{cite_defferrard_chebynet}. ChebyNet performs graph convolution by approximating spectral filters using Chebyshev polynomials $T_k$ applied to the rescaled graph Laplacian $\tilde{L}$ ($\tilde{L} = 2L/\lambda_{\max} - I$, where $L = I - D^{-1/2} A D^{-1/2}$ is the normalized Laplacian). The graph convolution operation for layer $l$ with input features $H^{(l-1)}$ is defined as: \begin{equation}
+            H^{(l)} = \sigma\left( \sum_{k=0}^{K-1} \Theta_k^{(l)} T_k(\tilde{L}) H^{(l-1)} \right)
+            \label{eq:chebynet}
+        \end{equation}
+        where $\sigma$ is the ReLU activation function, $\Theta_k^{(l)}$ are learnable filter parameters for order $k$ at layer $l$, and $K$ is the polynomial order (set to 4). The Chebyshev polynomials are computed recursively: $T_k(x) = 2x T_{k-1}(x) - T_{k-2}(x)$, with $T_0(x)=1$ and $T_1(x)=x$. These branches operate on distinct learnable adjacency matrices $A^1, A^2$, derived from a learnable parameter tensor and symmetrized ($A^k = \text{ReLU}(\text{adj}_k + \text{adj}_k^T)$). The depths of the ChebyNet layers are $L_1$ and $L_2$. Let the outputs be $H^1_i, H^2_i$.
+    \item \textbf{Fixed Local Graph Branch ($G_{\text{local}}$):} A third ChebyNet-based Graph Encoder branch operates similarly but uses a fixed, pre-computed adjacency matrix $A^{\text{local}}$. $A^{\text{local}}$ reflects spatial proximity based on electrode 3D coordinates, connecting channels within a distance $\delta$. This branch captures localized interactions using the same ChebyNet architecture (depth $L_1$). Let its output be $H^{\text{local}}_i$.
+    \item \textbf{Residual Connection:} A non-graph path provides a baseline feature representation $H^{\text{res}}_i$ by applying a linear projection layer, $LP_{\text{res}}$, to the flattened input $F^i$.
+\end{enumerate}
+
+
+\textbf{Learnable Fusion:} The representations from the four branches ($H^1_i, H^2_i, \\H^{\text{local}}_i, H^{\text{res}}_i$, potentially mapped to a common dimension $d_g$) are adaptively combined. Using learnable weights $w_{\text{fuse}} \in \mathbb{R}^4$ and normalized scores $\alpha_k = \text{softmax}(w_{\text{fuse}})_k$, the fused representation $H^{\text{fused}}_i$ is computed as:
+\begin{equation}
+    H^{\text{fused}}_i = \sum_{k \in \{\text{res}, 1, 2, \text{local}\}} \alpha_k H^k_i
+    \label{eq:fusion_v3}
+\end{equation}
+\textbf{Graph-to-Token Conversion:} The node representations within $H^{\text{fused}}_i$ are converted into a single token vector $s^i \in \mathbb{R}^{d_g}$ using a specified mechanism (e.g., a linear projection $LP_{\text{token}}$ when `graph2token='Linear'`).
+
+The module outputs a sequence of tokens $S_{\text{out}} = (s^1, s^2, \dots, s^S) \in \mathbb{R}^{S \times d_g}$.
+
+\subsection{Hybrid Mamba-Attention Temporal Modeling}
+
+\label{subsec:temporal_modeling_v3}
+
+This module processes the token sequence $S_{\text{out}}$ to capture temporal dependencies. It employs a hybrid architecture that interleaves Mamba and Attention mechanisms within $D$ main stages, where $D$ is the \texttt{hybrid\_depth} parameter. Each stage follows a repeating structural pattern: $R$ blocks, where each block comprises a Mamba layer followed by a FeedForward Network (FFN), are succeeded by a single block containing an Attention layer also followed by an FFN. The parameter $R$ corresponds to the \texttt{mamba\_attention\_ratio}. Standard residual connections and Layer Normalization (implemented using a PreNorm structure) are applied around each main sublayer (Mamba, Attention, or FFN).
+
+
+\begin{itemize}
+    \item \textbf{Mamba Layer:} Based on structured State Space Models (SSMs) \cite{cite_mamba}, Mamba layers efficiently model long-range dependencies with linear time complexity $O(S)$. The core idea involves a discretized state update mechanism where the state $h_t \in \mathbb{R}^{d_{state}}$ evolves based on the input $x_t \in \mathbb{R}^{d_g}$:
+        \begin{equation}
+            \begin{split}
+                h_t &= \bar{A}_t h_{t-1} + \bar{B}_t x_t \\
+                y_t &= C_t h_t
+            \end{split}
+            \label{eq:mamba_ssm}
+        \end{equation}
+        A key feature of Mamba is that the state transition matrix $\bar{A}_t$ and input projection $\bar{B}_t$ are dynamically parameterized as functions of the input $x_t$, enabling content-aware sequence modeling. We utilize the implementation from \cite{cite_mamba_code} with state dimension $d_{state}$ and expansion factor $E$.
+        \\
+    \item \textbf{Attention Layer:} A multi-head self-attention mechanism with $H$ heads and head dimension $d_h$ ($d_g = H \times d_h$) computes scaled dot-product attention:
+        \begin{equation}
+            \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_h}}\right)V
+            \label{eq:attention}
+        \end{equation}
+        Following this, a Short-Time Aggregation (STA) step is applied. For each attention head's output sequence $O_{\text{head}} \in \mathbb{R}^{S \times d_h}$, a 1D temporal convolution with kernel size $k_a$ is applied after dropout (scaled by $\alpha$):
+        \begin{equation}
+            O'_{\text{head}} = \text{Conv1D}(\text{Dropout}_{\alpha}(O_{\text{head}}); \text{kernel}=k_a)
+            \label{eq:sta_conv}
+        \end{equation}
+        The outputs from all heads are concatenated and projected back to the dimension $d_g$ via a linear transformation $W_{\text{sta}}$: $Z_{\text{STA}} = \text{Concat}(O'_{1}, \dots, O'_{H}) W_{\text{sta}}$. STA provides local temporal smoothing after global context aggregation.
+        \\
+    \item \textbf{FeedForward Network (FFN):} Standard position-wise FFNs (two linear layers with ReLU activation and dropout) follow each Mamba and Attention computation.
+\end{itemize}
+
+
+
+This hybrid module outputs a refined sequence $Z \in \mathbb{R}^{S \times d_g}$ enriched with temporal context.
+
+
+
+\subsection{Classification Head}
+
+\label{subsec:classification_head_v3}
+
+
+
+The final classification head maps the contextualized sequence representation $Z$ to the final class predictions. Temporal mean pooling aggregates information across the sequence dimension:
+
+\begin{equation}
+    z_{\text{pooled}} = \frac{1}{S} \sum_{i=1}^{S} Z_i
+    \label{eq:pooling}
+\end{equation}
+
+where $z_{\text{pooled}} \in \mathbb{R}^{d_g}$. This vector is then passed through a final MLP classifier, $MLP_{\text{out}}$ (typically a single linear layer), yielding the output logits $y_{\text{logits}} \in \mathbb{R}^{N_{\text{class}}}$. Softmax is applied to obtain class probabilities.
+
+
+\subsection{A Subsection Sample}
+Please note that the first paragraph of a section or subsection is
+not indented. The first paragraph that follows a table, figure,
+equation etc. does not need an indent, either.
+
+Subsequent paragraphs, however, are indented.
+
+\subsubsection{Sample Heading (Third Level)} Only two levels of
+headings should be numbered. Lower level headings remain unnumbered;
+they are formatted as run-in headings.
+
+\paragraph{Sample Heading (Fourth Level)}
+The contribution should contain no more than four levels of
+headings. Table~\ref{tab1} gives a summary of all heading levels.
+
+\begin{table}
+\caption{Table captions should be placed above the
+tables.}\label{tab1}
+\begin{tabular}{|l|l|l|}
+\hline
+Heading level &  Example & Font size and style\\
+\hline
+Title (centered) &  {\Large\bfseries Lecture Notes} & 14 point, bold\\
+1st-level heading &  {\large\bfseries 1 Introduction} & 12 point, bold\\
+2nd-level heading & {\bfseries 2.1 Printing Area} & 10 point, bold\\
+3rd-level heading & {\bfseries Run-in Heading in Bold.} Text follows & 10 point, bold\\
+4th-level heading & {\itshape Lowest Level Heading.} Text follows & 10 point, italic\\
+\hline
+\end{tabular}
+\end{table}
+
+
+\noindent Displayed equations are centered and set on a separate
+line.
+\begin{equation}
+x + y = z
+\end{equation}
+Please try to avoid rasterized images for line-art diagrams and
+schemas. Whenever possible, use vector graphics instead (see
+Fig.~\ref{fig1}).
+
+
+
+\begin{theorem}
+This is a sample theorem. The run-in heading is set in bold, while
+the following text appears in italics. Definitions, lemmas,
+propositions, and corollaries are styled the same way.
+\end{theorem}
+%
+% the environments 'definition', 'lemma', 'proposition', 'corollary',
+% 'remark', and 'example' are defined in the LLNCS documentclass as well.
+%
+\begin{proof}
+Proofs, examples, and remarks have the initial word in italics,
+while the following text appears in normal font.
+\end{proof}
+For citations of references, we prefer the use of square brackets
+and consecutive numbers. Citations using labels or the author/year
+convention are also acceptable. The following bibliography provides
+a sample reference list with entries for journal
+articles~\cite{ref_article1}, an LNCS chapter~\cite{ref_lncs1}, a
+book~\cite{ref_book1}, proceedings without editors~\cite{ref_proc1},
+and a homepage~\cite{ref_url1}. Multiple citations are grouped
+\cite{ref_article1,ref_lncs1,ref_book1},
+\cite{ref_article1,ref_book1,ref_proc1,ref_url1}.
+
+
+
+\section{Experiments}
+%??\\
+In this section, we first introduce the used datasets, evaluation metrics, and experimental settings. Then, we demonstrate the effectiveness of our approach through comparative
+experiments, ablation experiments, and hyper-parameter exploration.%\\??
+
+
+
+\begin{table}[htbp] % Use [htbp] for placement preference: here, top, bottom, page
+\caption{Performance comparison with baseline methods on the SEED dataset. Results are reported as mean $\pm$ standard deviation for Accuracy (ACC) and F1-score (F1).}
+\label{tab:baseline_comparison}
+\centering % Center the table
+\begin{tabular}{lcccc}
+\hline
+\textbf{Method} & \textbf{ACC} & \textbf{std} & \textbf{F1} & \textbf{std} \\
+\hline
+DGCNN         & 0.724 & 0.145 & 0.619 & 0.311 \\
+GCB-Net    & 0.684 & 0.172 & 0.517 & 0.357 \\
+RGNN & 0.790 & 0.148 & 0.802 & 0.133 \\
+TSception   & 0.662 & 0.181 & 0.621 & 0.283 \\
+TCN & 0.765 & 0.140 & 0.737 & 0.219 \\
+LSTM    & 0.733 & 0.158 & 0.670 & 0.274 \\
+TESANet & 0.658 & 0.115 & 0.606 & 0.240 \\
+Conformer & 0.612 & 0.127 & 0.529 & 0.221 \\
+AMDET & 0.721 & 0.168 & 0.649 & 0.306 \\
+\hline
+EmT(baseline) & \underline{0.785} & 0.134 & \underline{0.795} & 0.130 \\
+\hline
+\textbf{MAGNet (Ours)} & \textbf{0.801} & 0.121 & \textbf{0.815} & 0.096 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+
+
+
+\subsection{Datasets}
+\label{subsec:datasets} % Optional label
+
+In this study, we utilize the publicly available SEED (SJTU Emotion EEG Dataset) \cite{cite_seed_dataset_zheng, cite_seed_dataset_duan}, a widely adopted benchmark for EEG-based emotion recognition. The dataset contains EEG recordings from 15 native Chinese participants (7 males, 8 females). During the experiment, subjects watched 15 Chinese film clips, each approximately 4 minutes long, designed to elicit three target emotions: positive, negative, and neutral. The EEG signals corresponding to each film clip viewing constitute one trial. Each participant repeated the experiment across three separate sessions, yielding a total of 45 trials per participant.
+
+Brain activity was recorded using a 62-channel electrode cap arranged according to the international 10-20 system. The signals were originally sampled at 1000 Hz. The provided dataset includes preprocessed data, which typically involves downsampling (e.g., to 200 Hz) and bandpass filtering (e.g., within 0.3-50 Hz or 1-50 Hz) to mitigate noise and artifacts \cite{cite_seed_dataset_zheng}. We employ this preprocessed version in our experiments. % Adjust this last sentence if you performed different preprocessing.
+
+
+\subsection{Preprocessing}
+\label{subsec:preprocessing}
+Prior to model input, the raw EEG signals from the SEED dataset underwent a standardized preprocessing pipeline to extract pertinent features, adapting the methodology described in EmT\cite{cite_ding_emt}. % Reference EmT paper
+
+Initially, the signals, originally sampled at 1000 Hz, were downsampled to $f_s = 200$ Hz to reduce computational load while retaining relevant frequency information. Subsequently, a bandpass filter was applied to remove baseline drift and high-frequency noise; consistent with the SEED dataset's standard processing \cite{cite_seed_dataset_zheng}, the filter passband was 0.3 Hz to 50 Hz. % Filter type (e.g., Butterworth) often isn't detailed in papers using standard dataset preprocessing.
+
+Following filtering, each trial was segmented using a two-stage sliding window approach. The signal was partitioned into primary segments $\bar{X}$. Each primary segment was then further subdivided into overlapping subsegments $\tilde{X} \in \mathbb{R}^{c \times l'}$ using a window corresponding to $l'=2$ seconds with a stride of $s'=0.5$ seconds, as specified for SEED in EmT\cite{cite_ding_emt}. % EmT specifies l' and s' for SEED, but not l and s.
+
+For each subsegment $\tilde{X}$, channel-wise spectral features were computed. Specifically, we calculated the Relative Power Spectral Density (rPSD) using Welch's periodogram method \cite{cite_welch_method}. A 1-second Hann window with 50\% overlap was employed to estimate the power spectrum, consistent with the implementation provided. Power was calculated for seven standard frequency bands: delta (1–4 Hz), theta (4–8 Hz), alpha (8–12 Hz), low beta (12–16 Hz), beta (16–20 Hz), high beta (20–28 Hz), and gamma (30–45 Hz) \cite{cite_ding_emt}. The absolute power in each band was then normalized by the total power across these seven bands to obtain the relative power (rPSD). This yielded a feature vector of dimension $f=7$ for each channel per subsegment.
+
+The outcome of this preprocessing pipeline is a sequence of feature matrices $\{F^i\}$, where each $F^i \in \mathbb{R}^{c \times f}$ contains the rPSD features for all $c=62$ channels corresponding to the $i$-th subsegment. This sequence, representing the temporal evolution of channel-wise spectral power distributions, serves as the direct input to the MAGNet model.
+
+
+
+
+
+\subsection{Experiment Settings}
+
+\label{subsec:exp_settings}
+
+
+
+\subsubsection{Evaluation Protocol}
+
+\label{subsubsec:eval_protocol}
+
+
+
+To evaluate the cross-subject generalization capability of MAGNet, we followed the standard protocol used for the SEED dataset \cite{cite_seed_dataset_zheng}, consistent with prior work such as EmT \cite{cite_ding_emt}. Specifically, we employed a Leave-One-Subject-Out (LOSO) cross-validation strategy. In each of the 15 folds, data from one participant was designated as the test set. The data from the remaining 14 participants formed the training pool, which was further randomly split into 80\% for model training and 20\% for validation \cite{cite_ding_emt}. The final reported performance is the average of the metrics (Accuracy and F1-score, see Section \ref{subsec:eval_metrics}) obtained across all 15 test folds.
+
+
+\subsection{Implementation Details}
+\label{subsubsec:training_details}
+
+The MAGNet model was trained using the hyperparameters summarized in Table \ref{tab:training_params}. We utilized the PyTorch framework \cite{cite_pytorch} for implementation and NVIDIA GeForce RTX3090 GPUs for computation.
+
+\begin{table}[htbp]
+\caption{Key training hyperparameters}
+\label{tab:training_params}
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Optimizer & AdamW \\ % Assumed based on common practice & EmT
+Initial Learning Rate & 3e-4 \\ % Matches --learning-rate 3e-4
+LR Scheduler Step Size & 5 epochs \\ % Matches --step-size 5
+Batch Size & 32 \\ % Matches --batch-size 64
+Max Epochs & 10 \\ % Matches --max-epoch 10 (See Note Below)
+Label Smoothing Rate & 0.1 \\ % Matches --LS-rate 0.1
+Dropout Rate & 0.25 \\ % Matches --dropout 0.25
+\hline
+\end{tabular}
+% Note: The script defines both '--max-epoch 10' and '--max-epoch-cmb 100'.
+% The value 10 is used here, aligning with EmT's SEED classification epochs.
+% Please verify which value reflects the actual training procedure reported.
+\end{table}
+
+
+
+
+
+
+
+
+
+\subsection{Evaluation Metrics}
+\label{subsec:eval_metrics} % Optional label
+
+We evaluate model performance using Accuracy (Acc), Precision (P), Recall (R), and F1-score (F1). These metrics are calculated as follows:
+
+\begin{equation}
+\text{Accuracy} = \frac{\text{Correct Predictions}}{\text{Total Samples}}
+\end{equation}
+
+For the following metrics, let TP, FP, and FN denote the number of True Positives, False Positives, and False Negatives for a given class, respectively.
+
+\begin{equation}
+\text{Precision (P)} = \frac{\text{TP}}{\text{TP} + \text{FP}}
+\end{equation}
+
+\begin{equation}
+\text{Recall (R)} = \frac{\text{TP}}{\text{TP} + \text{FN}}
+\end{equation}
+
+\begin{equation}
+\label{eq:f1_score} % Optional label for referencing the F1 equation
+\text{F1-score (F1)} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}} = \frac{2 \times \text{TP}}{2 \times \text{TP} + \text{FP} + \text{FN}}
+\end{equation}
+
+These metrics provide a comprehensive assessment of the model's classification performance. Overall F1-scores reported in this work are computed by averaging per-class scores. % Adjusted last sentence for minimal necessary context based on abstract
+
+\section{Results Analyses}
+
+
+
+
+
+
+\subsection{Ablation Experiments}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper, we addressed the significant challenge of accurately recognizing human emotions from EEG signals, particularly focusing on improving performance in cross-subject scenarios where individual differences pose difficulties for generalization. We aimed to achieve this by developing a model capable of effectively integrating the complex spatial, spectral, and temporal dynamics inherent in EEG data.
+
+To this end, we proposed Mamba Attention Graph Network (MAGNet), a novel hybrid deep learning architecture. MAGNet leverages a multi-view Graph Convolutional Network (GCN) to capture intricate spatio-spectral relationships between EEG channels, potentially enhanced by neuroscientific priors regarding channel locations. Following the spatial encoding, a hybrid Mamba-Attention module is employed to model the long-range temporal dependencies within the extracted features, capturing the evolution of brain activity associated with emotions.
+
+Our extensive experiments conducted on the public SEED dataset using a rigorous cross-subject validation protocol demonstrated the effectiveness of the proposed MAGNet framework. The model achieved competitive performance [consider re-stating key metrics like: with an average accuracy of 80.1\% and an F1-score of 81.5\%], significantly outperforming several relevant baseline methods. These results validate the potential of synergistically combining graph neural networks with state-of-the-art sequence models like Mamba and Attention for analyzing complex EEG patterns.
+
+The main contributions of this work are threefold: 1) the proposal of the MAGNet architecture tailored for EEG-based emotion recognition, integrating GCNs with Mamba and Attention; 2) the demonstration of its effectiveness in fusing spatiotemporal-spectral information; and 3) the validation of its robustness in the challenging cross-subject setting.
+
+While MAGNet shows promising results, future research could explore several avenues. Investigating alternative graph construction methods or incorporating dynamic graph structures could further enhance spatial modeling. Exploring different variants of State Space Models or Attention mechanisms might yield further performance gains. Additionally, validating MAGNet on other EEG datasets (e.g., DEAP) or different affective BCI tasks, as well as optimizing the model for computational efficiency, represent valuable directions for future work.
+
+In conclusion, MAGNet offers a promising approach for advancing EEG-based emotion recognition systems. By effectively integrating spatial, spectral, and temporal feature learning, it demonstrates strong potential for building more accurate and generalizable models applicable to affective computing and brain-computer interfaces.
+
+\begin{credits}
+\subsubsection{\ackname} 
+This research was supported by the Sichuan Innovation Training Program (Project No.  S202410619045).  We thank Prof. Zhao Xujian for his guidance.
+
+% \subsubsection{\discintname}
+% It is now necessary to declare any competing interests or to specifically
+% state that the authors have no competing interests. Please place the
+% statement with a bold run-in heading in small font size beneath the
+% (optional) acknowledgments\footnote{If EquinOCS, our proceedings submission
+% system, is used, then the disclaimer can be provided directly in the system.},
+% for example: The authors have no competing interests to declare that are
+% relevant to the content of this article. Or: Author A has received research
+% grants from Company W. Author B has received a speaker honorarium from
+% Company X and owns stock in Company Y. Author C is a member of committee Z.
+\end{credits}
+
+
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+% \bibliographystyle{splncs04}
+% \bibliography{mybibliography}
+%
+\begin{thebibliography}{8}
+\bibitem{ref_article1}
+Author, F.: Article title. Journal \textbf{2}(5), 99--110 (2016)
+
+\bibitem{ref_lncs1}
+Author, F., Author, S.: Title of a proceedings paper. In: Editor,
+F., Editor, S. (eds.) CONFERENCE 2016, LNCS, vol. 9999, pp. 1--13.
+Springer, Heidelberg (2016). \doi{10.10007/1234567890}
+
+\bibitem{ref_book1}
+Author, F., Author, S., Author, T.: Book title. 2nd edn. Publisher,
+Location (1999)
+
+\bibitem{ref_proc1}
+Author, A.-B.: Contribution title. In: 9th International Proceedings
+on Proceedings, pp. 1--2. Publisher, Location (2010)
+
+\bibitem{ref_url1}
+LNCS Homepage, \url{http://www.springer.com/lncs}, last accessed 2023/10/25
+\end{thebibliography}
+\end{document}

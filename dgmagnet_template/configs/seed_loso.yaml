@@ -1,0 +1,26 @@
+# SEED dataset — 15 subjects, 3 sessions, 3 classes (pos/neu/neg)
+# Inherits from base.yaml, overrides dataset-specific fields
+
+_base_: base.yaml
+
+experiment:
+  name: dg_magnet_seed_loso
+
+data:
+  dataset: SEED
+  root: ~/dgmagnet/data/SEED
+  num_channels: 62
+  num_bands: 5
+
+model:
+  num_classes: 3
+  d_g: 64
+
+evaluation:
+  protocol: LOSO
+  n_folds: 15
+
+# Target performance:
+#   Vanilla MAGNet baseline: ~80%
+#   + ISGD + Adv + MI:       ~85%
+#   + TTGA (full DG-MAGNet): ~89%+
