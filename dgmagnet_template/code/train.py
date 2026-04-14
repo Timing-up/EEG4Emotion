@@ -16,7 +16,7 @@ import torch
 import numpy as np
 
 from .trainers.dg_trainer import run_loso
-from .data_loader import build_loaders_libeer
+from .seed_loader import build_loaders_seed
 
 
 def load_config(config_path: str, variant: str | None = None) -> dict:
@@ -194,7 +194,7 @@ def main():
 
     results = run_loso(
         cfg,
-        build_loaders_fn=build_loaders_libeer,
+        build_loaders_fn=build_loaders_seed,
         build_A_local_fn=build_A_local,
         device=device,
     )

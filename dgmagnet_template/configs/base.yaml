@@ -5,7 +5,7 @@ experiment:
   name: dg_magnet_base
   seed: 2025
   deterministic: true
-  device: cuda
+  device: cpu
 
 data:
   dataset: SEED                # SEED | SEED-IV | DEAP
@@ -69,7 +69,7 @@ training:
   scheduler: cosine            # cosine | step | none
   early_stop_patience: 20
   grad_clip: 1.0
-  mixed_precision: true
+  mixed_precision: false
 
 ttga:
   enabled: true
@@ -90,10 +90,10 @@ evaluation:
   seeds: [2024, 2025, 2026]
 
 logging:
-  use_wandb: true
+  use_wandb: false
   wandb_project: dg-magnet
   wandb_entity: null           # FILL IN YOUR ENTITY
   log_every: 20                # steps
   save_checkpoints: true
-  checkpoint_dir: ~/dgmagnet/outputs/checkpoints
-  figures_dir: ~/dgmagnet/outputs/figures
+  checkpoint_dir: /root/EEG4Emotion/outputs/checkpoints
+  figures_dir: /root/EEG4Emotion/outputs/figures

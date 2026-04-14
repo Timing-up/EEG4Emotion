@@ -8,7 +8,7 @@ experiment:
 
 data:
   dataset: SEED
-  root: ~/dgmagnet/data/SEED
+  root: /root/data/SEED/SEED
   num_channels: 62
   num_bands: 5
 
